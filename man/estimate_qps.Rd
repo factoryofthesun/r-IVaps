@@ -7,9 +7,10 @@
 estimate_qps(
   data,
   ML,
-  ml_type = NA,
+  ml_type = "stats",
   Xc = NA,
   Xd = NA,
+  infer = F,
   S = 100,
   delta = 0.8,
   L = NA,
@@ -24,11 +25,15 @@ estimate_qps(
 
 \item{ML}{ML function for treatment recommendation}
 
-\item{ml_type}{String indicating ML function type. See details for supported packages. Defaults to "stats".}
+\item{ml_type}{String indicating the ML object source package name, or "custom" for a user-defined
+algorithm that runs prediction upon function call with a single input data.table object.
+See details for supported packages. Defaults to "stats".}
 
 \item{Xc}{Character vector of column names of the continuous variables.}
 
 \item{Xd}{Character vector of column names of the discrete variables.}
+
+\item{infer}{Boolean whether to infer continuous/discrete variables from remaining columns of data. Defaults to F.}
 
 \item{S}{Number of draws for each QPS estimation. Defaults to 100.}
 
@@ -52,6 +57,8 @@ estimation.}
 Main QPS estimation function.
 }
 \details{
+ML packages currently supported: mlr3, caret, stats (base)
+
 Quasi-propensity score estimation involves taking draws \mjeqn{X_c^1,
 \ldots,X_c^S}{X_c1, ..., X_cS} from the uniform distribution on
 \mjeqn{N(X_{ci}, \delta)}, where \mjeqn{N(X_{ci},\delta)} is the \mjeqn{p_c}

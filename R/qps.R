@@ -1,10 +1,16 @@
+.datatable.aware=T
+
 #' Main QPS estimation function.
 #'
+#' @import data.table
 #' @param data Dataset containing ML input variables.
 #' @param ML ML function for treatment recommendation
-#' @param ml_type String indicating ML function type. See details for supported packages. Defaults to "stats".
+#' @param ml_type String indicating the ML object source package name, or "custom" for a user-defined
+#' algorithm that runs prediction upon function call with a single input data.table object.
+#' See details for supported packages. Defaults to "stats".
 #' @param Xc Character vector of column names of the continuous variables.
 #' @param Xd Character vector of column names of the discrete variables.
+#' @param infer Boolean whether to infer continuous/discrete variables from remaining columns of data. Defaults to F.
 #' @param S Number of draws for each QPS estimation. Defaults to 100.
 #' @param delta Radius of sampling ball. Can be either numeric or numeric vector. Defaults to 0.8.
 #' @param L Named list where the names correspond to the names of the mixed
@@ -33,26 +39,42 @@
 #' recommended to pass both \code{Xc} and \code{Xd} in the case that not all the
 #' variables in \code{data} are relevant for the ML input.
 #' @export
-estimate_qps <- function(data, ML, ml_type = NA, Xc = NA, Xd = NA, S = 100, delta = 0.8, L = NA, seed = NA, fcn = NA,
+estimate_qps <- function(data, ML, ml_type = "stats", Xc = NA, Xd = NA, infer=F, S = 100, delta = 0.8, L = NA, seed = NA, fcn = NA,
                          parallel = F, ...){
   data.table::setDT(data)
-  if (all(is.na(Xc)) & all(is.na(Xd))){
-    warning("In estimate_qps:\n Neither `Xc` nor `Xd` passed. Assuming all variables in `data` are continuous...")
-    X_c <- data
-    X_d <- NA
-  } else if(all(is.na(Xc))){
-    warning("In estimate_qps:\n `Xd` passed but `Xc` not passed. Assuming all remaining variables in `data` are continuous...")
-    Xc <- setdiff(names(data), Xd)
-    X_d <- data[, ..Xd]
-    X_c <- data[, ..Xc]
-  } else if(all(is.na(Xd))){
-    warning("In estimate_qps:\n `Xc` passed but `Xd` not passed. Assuming all remaining variables in `data` are discrete...")
-    Xd <- setdiff(names(data), Xc)
-    X_d <- data[, ..Xd]
-    X_c <- data[, ..Xc]
+  if (infer == T){
+    if (all(is.na(Xc)) & all(is.na(Xd))){
+      warning("(Inference on) Neither `Xc` nor `Xd` passed. Assuming all variables in `data` are continuous...")
+      X_c <- data
+      X_d <- NA
+    } else if(all(is.na(Xc))){
+      warning("(Inference on) `Xd` passed but `Xc` not passed. Assuming all remaining variables in `data` are continuous...")
+      Xc <- setdiff(names(data), Xd)
+      X_d <- data[, ..Xd]
+      X_c <- data[, ..Xc]
+      if (length(X_c) < 1){ # If no cts columns then raise error
+        stop(paste0("No continuous variables left in input data after removing discrete.",
+                    " QPS estimation requires at least one continuous variable."))
+      }
+    } else if(all(is.na(Xd))){
+      warning("(Inference on) `Xc` passed but `Xd` not passed. Assuming all remaining variables in `data` are discrete...")
+      Xd <- setdiff(names(data), Xc)
+      X_d <- data[, ..Xd]
+      X_c <- data[, ..Xc]
+    } else{
+      X_c <- data[, ..Xc]
+      X_d <- data[, ..Xd]
+    }
   } else{
-    X_c <- data[, ..Xc]
-    X_d <- data[, ..Xd]
+    if (all(is.na(Xc))|length(Xc) == 0){
+      stop(paste0("No continuous variables passed and variable inference is off.",
+                  " QPS estimation requres at least one continuous variable."))
+    }
+    X_c <- data[,..Xc]
+    X_d <- NA
+    if (!all(is.na(Xd)) & length(Xd) > 0){
+      X_d <- data[,..Xd]
+    }
   }
 
   # Preprocess mixed variables
@@ -90,41 +112,87 @@ computeQPS <- function(X_c, X_d, ML, ml_type, S, delta, mu, sigma, mixed_inds, m
   p_c <- length(names(X_c))
 
   # Run ML prediction depending on type of function
-  X_d_long <- X_d[rep(X_d[,.I], S)]
+  if (!all(is.na(X_d)) & length(X_d) > 0){
+    X_d_long <- X_d[rep(X_d[,.I], each=S)]
+  } else{
+    X_d_long <- NA
+  }
   if (typeof(draws) == "list"){
     qps_list <- list()
     for (d in as.character(delta)){
       # Convert draws and discrete values back to data table
       tmp_draws <- aperm(draws[[d]], c(2,1,3))
-      tmp_draws <- data.table::setDT(matrix(tmp_draws, S*nobs, p_c))
-      setnames(tmp_draws, names(X_c))
-      input <- cbind(tmp_draws, X_d_long)
-      if (ml_type %in% c("mlr3", "caret", "stats")){ # All these packages extend 'predict' function
+      tmp_draws <- data.table::as.data.table(matrix(tmp_draws, S*nobs, p_c))
+      data.table::setnames(tmp_draws, names(X_c))
+      if (!all(is.na(X_d_long))){
+        input <- cbind(tmp_draws, X_d_long)
+      } else{
+        input <- tmp_draws
+      }
+      if (ml_type %in% c("mlr3", "caret", "stats", "randomForest", "e1071", "bestridge")){ # All these packages extend 'predict' function
         pred_out <- predict(ML, input)
+      } else if (ml_type %in% c("rpart", "tree")){
+        pred_out <- predict(ML, input, type="vector")
+      } else if (ml_type == "custom"){
+          pred_out <- ML(input)
+        } else {
+        message(paste0("Package ", ml_type, " not found in internal library. Attempting to apply `predict()` syntax..."))
+        pred_out <- tryCatch({
+          predict(ML, input)
+        },
+        error=function(cond){
+          message(paste0("Function call raised error: ", cond))
+          return(NA)
+        },
+        warning=function(cond){
+          message(paste0("Warning: ", cond))
+          return(NULL)
+        })
       }
       # Optional: additional post-processing function
-      if (typeof(pred_out) != "logical"){
-        pred_out <- fcn(pred_out)
+      if (typeof(fcn) != "logical"){
+        pred_out <- fcn(pred_out, ...)
       }
       # Avg every S values of prediction output
-      qps <- .colMeans(pred_out, S, length(pred_out)/S)
+      qps <- .colMeans(pred_out, S, length(pred_out)/S, na.rm=T)
       qps_list[[d]] <- qps
     }
     return(qps_list)
   } else{
     # Convert draws back to data table
-    draws <- data.table::setDT(matrix(aperm(draws, c(2,1,3)), S*nobs, p_c))
-    setnames(draws, names(X_c))
-    input <- cbind(draws, X_d_long)
-    if (ml_type %in% c("mlr3", "caret", "stats")){ # All these packages extend 'predict' function
+    draws <- data.table::as.data.table(matrix(aperm(draws, c(2,1,3)), S*nobs, p_c))
+    data.table::setnames(draws, names(X_c))
+    if (!all(is.na(X_d_long))){
+      input <- cbind(draws, X_d_long)
+    } else{
+      input <- draws
+    }
+    if (ml_type %in% c("mlr3", "caret", "stats", "randomForest", "e1071", "bestridge")){ # All these packages extend 'predict' function
       pred_out <- predict(ML, input)
+    } else if (ml_type %in% c("rpart", "tree")){
+      pred_out <- predict(ML, input, type="vector")
+    } else if (ml_type == "custom"){
+      pred_out <- ML(input)
+    } else {
+      message(paste0("Package ", ml_type, " not found in internal library. Attempting to apply `predict()` syntax..."))
+      pred_out <- tryCatch({
+        predict(ML, input)
+      },
+      error=function(cond){
+        message(paste0("Function call raised error: ", cond))
+        return(NA)
+      },
+      warning=function(cond){
+        message(paste0("Warning: ", cond))
+        return(NULL)
+      })
     }
     # Optional: additional post-processing function
-    if (typeof(pred_out) != "logical"){
-      pred_out <- fcn(pred_out)
+    if (typeof(fcn) != "logical"){
+      pred_out <- fcn(pred_out, ...)
     }
     # Avg every S values of prediction output
-    qps <- .colMeans(pred_out, S, length(pred_out)/S)
+    qps <- .colMeans(pred_out, S, length(pred_out)/S, na.rm=T)
     return(qps)
   }
 }
