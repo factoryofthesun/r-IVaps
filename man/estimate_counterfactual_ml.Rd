@@ -5,12 +5,18 @@
 \title{Estimate counterfactual performance of another algorithm}
 \usage{
 estimate_counterfactual_ml(
-  data,
-  qps = "QPS",
-  Y = "Y",
-  Z = "Z",
-  ml_out = "ML1",
-  cf_ml_out = "ML2",
+  data = NULL,
+  qps = NULL,
+  Y = NULL,
+  Z = NULL,
+  ML = NULL,
+  ML_new = NULL,
+  degen = c(0, 1),
+  qps_lab = "QPS",
+  Y_lab = "Y",
+  Z_lab = "Z",
+  ML_lab = "ML1",
+  ML_new_lab = "ML2",
   verbose = T
 )
 }
@@ -18,15 +24,27 @@ estimate_counterfactual_ml(
 \item{data}{Dataset containing QPS, Y, Z, the original ML algorithm predictions,
 and the counterfactual ML' algorithm predictions.}
 
-\item{qps}{Column name of QPS variable. Defaults to "QPS".}
+\item{qps}{Vector of QPS values.}
 
-\item{Y}{Column name of Y variable. Defaults to "Y".}
+\item{Y}{Vector of outcome values.}
 
-\item{Z}{Column name of Z variable. Defaults to "Z".}
+\item{Z}{Vector of ML recommendation values.}
 
-\item{ml_out}{Column name of original ML prediction variable. Defaults to "ML1".}
+\item{ML}{Vector of ML predictions.}
 
-\item{cf_ml_out}{Column name of counterfactual ML' prediction variable. Defaults to "ML2".}
+\item{ML_new}{Vector of counterfactual ML predictions.}
+
+\item{degen}{Vector of values for which QPS is degenerate. Defaults to c(0,1).}
+
+\item{qps_lab}{Column name of QPS variable. Defaults to "QPS".}
+
+\item{Y_lab}{Column name of Y variable. Defaults to "Y".}
+
+\item{Z_lab}{Column name of Z variable. Defaults to "Z".}
+
+\item{ML_lab}{Column name of original ML prediction variable. Defaults to "ML1".}
+
+\item{ML_new_lab}{Column name of counterfactual ML prediction variable. Defaults to "ML2".}
 
 \item{verbose}{Boolean indicator for whether to print summary output of estimation. Defaults to True.}
 }
@@ -39,10 +57,38 @@ Estimate counterfactual performance of another algorithm
 \details{
 The process of estimating counterfactual value works as follows. First we we fit the
 below OLS regression using historical recommendations and outcome \code{Z} and \code{Y}.
-\mjdeqn{Y_i = \beta_0 + \beta_1 Z_i + \beta_2 p^s(X_i; \delta) + \epsilon_i}{Y_i = beta_0 + beta_1 Z_i + beta_2 p^s(X_i; delta) + epsilon_i}
-where \mjeqn{\beta_1} is our estimated effect of treatment recommendation.
+\deqn{Y_i = \beta_0 + \beta_1 Z_i + \beta_2 p^s(X_i; \delta) + \epsilon_i}
+where \eqn{\beta_1} is our estimated effect of treatment recommendation.
 
-Then we take the original algorithm output \code{ml_out} and the counterfactual algorithm output \code{cf_ml_out}
+Then we take the original algorithm output \code{ML} and the counterfactual algorithm output \code{ML_new}
 and estimate the below value equation.
-\mjdeqn{\hat{V}(ML') = \frac{1}{n} \sum_{i=1}^n (Y_i + \hat{\beta_{ols}}(ML'(X_i) - ML(X_i)))}
+\deqn{\hat{V}(ML') = \frac{1}{n} \sum_{i=1}^n (Y_i + \hat{\beta_{ols}}(ML'(X_i) - ML(X_i)))}
+}
+\examples{
+library(mlr3)
+data("iris")
+assign_cutoff <- function(X, cutoff){
+  ret <- as.integer(X > cutoff)
+  return(ret)
+}
+test_data <- iris
+model <- lm(Sepal.Length ~ Sepal.Width + Petal.Length + Petal.Width, data=test_data)
+ML <- predict(model, test_data)
+task_iris <- TaskRegr$new(id="iris", backend=test_data[,1:4], target="Sepal.Length")
+learner = lrn("regr.rpart")
+learner$train(task_iris)
+ML_new <- predict(learner, test_data)
+qps <- estimate_qps(test_data, model, Xc = names(test_data)[2:4],
+           infer=FALSE, S=400, delta=0.8, fcn=assign_cutoff, cutoff = 6)
+# Can send counterfactual estimation inputs in two different ways
+Y_val <- test_data$Sepal.Length
+Z_val <- assign_cutoff(iris$Sepal.Length, 6)
+test_data[, Y := Y_val]
+test_data[, Z := Z_val]
+test_data[, ml := ML]
+test_data[, ml_new := ML_new]
+test_data[, QPS := qps]
+estimate_counterfactual_ml(qps = qps, Y = Y_val, Z = Z_val, ML = ML, ML_new = ML_new)
+estimate_counterfactual_ml(test_data, qps_lab = "QPS", Y_lab = "Y", Z_lab = "Z",
+                      ML_lab = "ml", ML_new_lab = "ml_new")
 }

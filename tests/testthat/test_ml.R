@@ -1,6 +1,5 @@
 test_that("QPS with each supported ML framework", {
   test_data <- iris
-  frameworks <- c("mlr3", "caret", "stats", "randomForest", "e1071", "bestridge", "rpart", "tree", "custom")
   for (framework in frameworks){
     print(framework)
     ml <- get_ml(framework, "continuous")
@@ -14,7 +13,6 @@ test_that("QPS with each supported ML framework", {
 
 test_that("QPS with each supported ML framework, 4th variable discrete", {
   test_data <- iris
-  frameworks <- c("mlr3", "caret", "stats", "randomForest", "e1071", "bestridge", "rpart", "tree", "custom")
   for (framework in frameworks){
     print(framework)
     ml <- get_ml(framework, "discrete")

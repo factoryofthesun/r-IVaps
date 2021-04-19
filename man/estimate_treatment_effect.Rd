@@ -5,11 +5,16 @@
 \title{Main treatment effect estimation function}
 \usage{
 estimate_treatment_effect(
-  data,
-  qps = "QPS",
-  Y = "Y",
-  Z = "Z",
-  D = "D",
+  data = NULL,
+  qps = NULL,
+  Y = NULL,
+  Z = NULL,
+  D = NULL,
+  degen = c(0, 1),
+  qps_lab = "QPS",
+  Y_lab = "Y",
+  Z_lab = "Z",
+  D_lab = "D",
   estimator = "2SLS",
   verbose = T
 )
@@ -17,13 +22,23 @@ estimate_treatment_effect(
 \arguments{
 \item{data}{Dataset containing QPS, Y, Z, and D data.}
 
-\item{qps}{Column name of QPS variable. Defaults to "QPS".}
+\item{qps}{Vector of QPS values.}
 
-\item{Y}{Column name of Y variable. Defaults to "Y".}
+\item{Y}{Vector of outcome values.}
 
-\item{Z}{Column name of Z variable. Defaults to "Z".}
+\item{Z}{Vector of ML recommendation values.}
 
-\item{D}{Column name of D variable. Defaults to "D".}
+\item{D}{Vector of treatment assignment values.}
+
+\item{degen}{Vector of values for which QPS is degenerate. Defaults to c(0,1).}
+
+\item{qps_lab}{Column name of QPS variable. Defaults to "QPS".}
+
+\item{Y_lab}{Column name of Y variable. Defaults to "Y".}
+
+\item{Z_lab}{Column name of Z variable. Defaults to "Z".}
+
+\item{D_lab}{Column name of D variable. Defaults to "D".}
 
 \item{estimator}{String method of IV estimation. Defaults to "2SLS".}
 
@@ -36,13 +51,36 @@ Fitted ivreg model object.
 Main treatment effect estimation function
 }
 \details{
+If the primary data vectors (qps, Y, Z, D) are not passed, then the fallback is to search for the
+\verb{_lab} variables in the \code{data} object.
+
 Treatment effect is estimated using IV estimation The default is to use the 2SLS method
 of estimation, with the equations illustrated below.
-\mjdeqn{D_i = \gamma_0(1-I) + \gamma_1 Z_i + \gamma_2 p^s(X_i;\delta) + v_i}{D_i = gamma_0(1-I) + gamma_1 Z_i + gamma_2 p^s(X_i;delta) + v_i}
-\mjdeqn{Y_i = \beta_0(1-I) + \beta_1 D_i + \beta_2 p^s(X_i;\delta) + \epsilon_i}{Y_i = beta_0(1-I) + beta_1 D_i + beta_2 p^s(X_i;delta) + epsilon_i}
-\mjeqn{\beta_1}{beta_1} is our causal estimation of the treatment effect. I is an indicator for if the ML funtion takes only a single
+\deqn{D_i = \gamma_0(1-I) + \gamma_1 Z_i + \gamma_2 p^s(X_i;\delta) + v_i}
+\deqn{Y_i = \beta_0(1-I) + \beta_1 D_i + \beta_2 p^s(X_i;\delta) + \epsilon_i}
+\eqn{\beta_1} is our causal estimation of the treatment effect. I is an indicator for if the ML funtion takes only a single
 nondegenerate value in the sample.
 }
 \examples{
+# Iris data
+data("iris")
+assign_cutoff <- function(X, cutoff){
+  ret <- as.integer(X > cutoff)
+  return(ret)
+}
+model <- lm(Sepal.Length ~ Sepal.Width + Petal.Length + Petal.Width, data=iris)
+qps <- estimate_qps(iris, model, Xc = names(iris)[2:4],
+          infer=FALSE, S=400, delta=0.8, fcn=assign_cutoff, cutoff=6)
 
+# Can send treatment effect inputs in two different ways
+Y_val <- iris$Sepal.Length
+Z_val <- assign_cutoff(iris$Sepal.Length, 6)
+D_val <- predict(model, iris)
+iris[, Y := Y_val]
+iris[, Z := Z_val]
+iris[, D := D_val]
+iris[, QPS := qps]
+estimate_treatment_effect(qps = qps, Y = Y_val, Z = Z_val, D = D_val)
+estimate_treatment_effect(iris, qps_lab = "QPS", Y_lab = "Sepal.Length", Z_lab = "Z",
+                          D_lab = "D")
 }

@@ -1,7 +1,7 @@
 test_that("Covariate balance", {
   test_data <- iris
   model <- lm(Sepal.Length ~ Sepal.Width + Petal.Length + Petal.Width, data=test_data)
-  qps <- estimate_qps(test_data, model, Xc = names(test_data)[2:4], infer=F, S=400, delta=0.8, fcn=assign_cutoff, c = 6)
+  qps <- estimate_qps(test_data, model, Xc = names(test_data)[2:4], infer=F, S=400, delta=0.8, fcn=assign_cutoff, cutoff = 6)
 
   # Test input errors
   expect_error(covariate_balance_test(test_data))

@@ -1,0 +1,202 @@
+---
+title: "qps: Iris Simulation Example"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{qps: Iris Simulation Example}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+
+
+
+
+The qps package is an implementation of the method of Quasi-Propensity Scores for treatment effect estimation introduced by [Narita 2020](https://ideas.repec.org/p/eti/rdpsjp/20045.html). On a high level, this method exploits a common quality across most algorithms -- that their outputs are based entirely on observable input variables. These outputs can therefore in theory be used to estimate the causal effects of past decisions that were mediated by such algorithms. Narita 2020 propose to estimate a 2SLS system of the following form:
+\begin{align}
+D_i &= \gamma_0 + \gamma_1 Z_i + \gamma_2 p^s(X_i;\delta) + v_i \\
+Y_i &= \beta_0 + \beta_1 D_i + \beta_2 p^s(X_i;\delta) + \epsilon_i
+\end{align}
+where $Z_i$ is a dummy for treatment recommendation (by the algorithm), and is used to instrument for $D_i$, a dummy for realized treatment. $p^s(X_i;\delta)$ is the estimated Quasi-Propensity Score for algorithm inputs $X_i$ and bandwidth $\delta$. $Y_i$ is the outcome variable of interest.
+
+qps provides functions for the two primary steps of this causal estimation: Quasi-Propensity Score (QPS) estimation and instrumental variables estimation. These functions should be compatible with all of the major machine-learning libraries in R. 
+
+# Training Data
+In this vignette, we will use the well-known [iris](https://www.rdocumentation.org/packages/datasets/versions/3.6.2/topics/iris) dataset to train a basic linear model and random forest model, then simulate some historical treatment data based on the predictions of these models and see how well the QPS method is able to capture the simulated treatment effect. 
+
+
+```r
+library(datasets)
+data(iris)
+str(iris)
+#> 'data.frame':	150 obs. of  5 variables:
+#>  $ Sepal.Length: num  5.1 4.9 4.7 4.6 5 5.4 4.6 5 4.4 4.9 ...
+#>  $ Sepal.Width : num  3.5 3 3.2 3.1 3.6 3.9 3.4 3.4 2.9 3.1 ...
+#>  $ Petal.Length: num  1.4 1.4 1.3 1.5 1.4 1.7 1.4 1.5 1.4 1.5 ...
+#>  $ Petal.Width : num  0.2 0.2 0.2 0.2 0.2 0.4 0.3 0.2 0.2 0.1 ...
+#>  $ Species     : Factor w/ 3 levels "setosa","versicolor",..: 1 1 1 1 1 1 1 1 1 1 ...
+```
+The QPS method requires the algorithmic output to be either a binary treatment recommendation or probabilities of treatment recommendation. Thus, we will define our target variable to be whether the flower species is either setosa or versicolor. 
+
+```r
+iris$target <- as.integer(iris$Species %in% c("setosa", "versicolor"))
+```
+
+# Train models 
+We will now train a linear model and randomforest model on the sample iris data. 
+
+```r
+library(randomForest)
+linear_model <- lm(target ~ Sepal.Length + Sepal.Width + Petal.Length + Petal.Width, data = iris)
+rf_model <- randomForest(target ~ Sepal.Length + Sepal.Width + Petal.Length + Petal.Width, data = iris)
+```
+
+# Bootstrap Iris Data
+Our sample size is not particularly conducive towards precise estimation, so we will boostrap the iris data to generate a final dataset of size 10000. 
+
+```r
+library(data.table)
+n <- 10000
+setDT(iris)
+boot_data <- list()
+for (col in c("Sepal.Length", "Sepal.Width", "Petal.Length", "Petal.Width")){
+  boot_data[[col]] <- rnorm(n, mean(iris[,get(col)]), sd(iris[,get(col)]))
+}
+full_data <- as.data.table(boot_data)
+```
+
+# Simulation Data 
+Let's simulate treatment and non-treatment outcomes for each observation i with the following structural equations:
+\begin{align}
+Y_{0i} &= \mathcal{N}(2,2)x_{1i} + \mathcal{N}(3,1)x_{2i} + \mathcal{N}(0,1) \\
+Y_{1i} &= Y_{0i} + \mathcal{N}(5,0.2) + \mathcal{N}(0,1)
+\end{align}
+Where $x_{1}$ and $x_{2}$ refer to the first and second variables of the full_data data, so the sepal length and width. 
+
+
+```r
+# Simulate treatment outcomes
+b1 <- rnorm(nrow(full_data), 2, 2)
+b2 <- rnorm(nrow(full_data), 2, 2)
+e0 <- rnorm(nrow(full_data))
+treatment_effect <- rnorm(nrow(full_data), 5, 0.2)
+e1 <- rnorm(nrow(full_data))
+full_data$Y0 <- b1 * full_data[,Sepal.Length] + b2 * full_data[,Sepal.Width] + e0
+full_data$Y1 <- full_data$Y0 + treatment_effect + e1
+```
+We will now generate treatment recommendation probabilities using our trained model, and define a decision function that recommends treatment assignment after a fixed probability cutoff. We will assume that the treatment assignment is actually realized for 75% of the recommended sample (no-defiers assumption). 
+
+```r
+cutoff <- function(probs, c = 0.5){
+  return(as.integer(probs > c))
+}
+full_data$lm_pred <- predict(linear_model, full_data)
+full_data$rf_pred <- predict(rf_model, full_data)
+full_data$lm_Z <- cutoff(full_data$lm_pred)
+full_data$rf_Z <- cutoff(full_data$rf_pred)
+
+# Generate treatment assignment D
+full_data$lm_D <- full_data$lm_Z
+lm_p <- runif(nrow(full_data))
+full_data[lm_p <= 0.25 & lm_Z == 1, lm_D := 0]
+full_data[,.N,.(lm_Z, lm_D)]
+#>    lm_Z lm_D    N
+#> 1:    0    0 3499
+#> 2:    1    0 1649
+#> 3:    1    1 4852
+
+full_data$rf_D <- full_data$rf_Z
+rf_p <- runif(nrow(full_data))
+full_data[rf_p <= 0.25 & rf_Z == 1, rf_D := 0]
+full_data[,.N,.(rf_Z, rf_D)]
+#>    rf_Z rf_D    N
+#> 1:    0    0 3003
+#> 2:    1    1 5212
+#> 3:    1    0 1785
+
+# Realized outcomes
+full_data[, lm_Y := Y1]
+full_data[lm_D == 0, lm_Y := Y0]
+full_data[, rf_Y := Y1]
+full_data[rf_D == 0, rf_Y := Y0]
+```
+The 2SLS method provides an estimate of the Local Average Treatment Effect (LATE). Below are the treatment effect values from our simulated data using the linear model. 
+
+```r
+ate <- mean(full_data$Y1 - full_data$Y0)
+atet <- mean(full_data[lm_D == 1, Y1] - full_data[lm_D == 1, Y0])
+late <- mean(full_data[lm_D == lm_Z, Y1] - full_data[lm_D == lm_Z, Y0])
+cat(paste0("ATE: ", ate, "\nATET: ", atet, "\nLATE: ", late, "\nTrue Effect: ", mean(treatment_effect)))
+#> ATE: 5.01624042179597
+#> ATET: 5.01012094749221
+#> LATE: 5.01337441832134
+#> True Effect: 4.99824800702316
+```
+# Apply QPS method
+We are now all set to perform our QPS estimation and treatment effect estimation. The entire process requires only two lines of code for each model. We will need to send in our `cutoff()` function as well as that is how we generated the `Z` variables. Note that the model library is a required input if the model does not come from the base "stats" library. 
+
+```r
+full_data$lm_qps <- estimate_qps(full_data, linear_model, Xc=names(full_data)[1:4], S=100, delta=1.5, fcn=cutoff, parallel=T)
+lm_effect <- estimate_treatment_effect(full_data, qps_lab="lm_qps", Y_lab="lm_Y", Z_lab="lm_Z", D_lab="lm_D")
+#> [1] "Estimating counterfactual value on 2350 out of 10000 observations where QPS is non-degenerate..."
+#> 
+#> Call:
+#> ivreg::ivreg(formula = Y ~ D + QPS | Z + QPS)
+#> 
+#> Residuals:
+#>      Min       1Q   Median       3Q      Max 
+#> -43.3158  -9.1428  -0.5358   8.7947  44.9420 
+#> 
+#> Coefficients:
+#>             Estimate Std. Error t value Pr(>|t|)    
+#> (Intercept)  17.1603     0.5131  33.443   <2e-16 ***
+#> D             4.2523     2.0470   2.077   0.0379 *  
+#> QPS           1.6805     2.0104   0.836   0.4033    
+#> 
+#> Diagnostic tests:
+#>                   df1  df2 statistic p-value    
+#> Weak instruments    1 2347   408.442  <2e-16 ***
+#> Wu-Hausman          1 2346     0.217   0.642    
+#> Sargan              0   NA        NA      NA    
+#> ---
+#> Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+#> 
+#> Residual standard error: 13.37 on 2347 degrees of freedom
+#> Multiple R-Squared: 0.03098,	Adjusted R-squared: 0.03015 
+#> Wald test: 31.14 on 2 and 2347 DF,  p-value: 4.493e-14
+
+full_data$rf_qps <- estimate_qps(full_data, rf_model, Xc=names(full_data)[1:4], S=100, delta=1.5, fcn=cutoff, parallel=T)
+rf_effect <- estimate_treatment_effect(full_data, qps_lab="rf_qps", Y_lab="rf_Y", Z_lab="rf_Z", D_lab="rf_D")
+#> [1] "Estimating counterfactual value on 3128 out of 10000 observations where QPS is non-degenerate..."
+#> 
+#> Call:
+#> ivreg::ivreg(formula = Y ~ D + QPS | Z + QPS)
+#> 
+#> Residuals:
+#>      Min       1Q   Median       3Q      Max 
+#> -54.1787  -9.2407  -0.2019   8.7077  51.5955 
+#> 
+#> Coefficients:
+#>             Estimate Std. Error t value Pr(>|t|)    
+#> (Intercept)  18.0067     0.4526  39.786  < 2e-16 ***
+#> D             5.9978     1.5754   3.807 0.000143 ***
+#> QPS          -1.1616     1.5711  -0.739 0.459760    
+#> 
+#> Diagnostic tests:
+#>                   df1  df2 statistic p-value    
+#> Weak instruments    1 3125   702.002  <2e-16 ***
+#> Wu-Hausman          1 3124     0.001   0.976    
+#> Sargan              0   NA        NA      NA    
+#> ---
+#> Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+#> 
+#> Residual standard error: 13.54 on 3125 degrees of freedom
+#> Multiple R-Squared: 0.03725,	Adjusted R-squared: 0.03664 
+#> Wald test: 28.76 on 2 and 3125 DF,  p-value: 4.196e-13
+```
+Let's take a look at our estimated outputs.
+
+```r
+cat(paste0("linear model LATE: ", lm_effect$coefficients['D'], "\nrandom forest LATE: ", rf_effect$coefficients['D']))
+#> linear model LATE: 4.25230045465392
+#> random forest LATE: 5.99784451764302
+```

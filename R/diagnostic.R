@@ -12,12 +12,30 @@
 #' @return List containing fitted multivariate multiple linear model and the results of the joint hypothesis test,
 #' including the F statistic and p-value of the Pillai's trace statistic.
 #' @examples
+#' # Iris data
+#' data("iris")
+#' assign_cutoff <- function(X, cutoff){
+#'   ret <- as.integer(X > cutoff)
+#'   return(ret)
+#' }
+#' model <- lm(Sepal.Length ~ Sepal.Width + Petal.Length + Petal.Width, data=iris)
+#' qps <- estimate_qps(iris, model, Xc = names(iris)[2:4], infer=FALSE, S=400,
+#'         delta=0.8, fcn=assign_cutoff, cutoff = 6)
+#' Z <- assign_cutoff(iris$Sepal.Length, 6)
+#' X <- iris[,2:4]
+#' iris[, QPS := qps]
+#' iris[, Z := Z]
+#' # Two ways of sending inputs
+#' out_direct <- covariate_balance_test(qps = qps, X = iris[, 2:4], Z = Z)
+#' out_indirect <- covariate_balance_test(data = iris, qps_lab = "QPS",
+#'            X_lab = names(iris)[2:4])
 #' @details
 #' If the primary data vectors (qps, X, Z) are not passed, then the fallback is to search for the
 #' `_lab` variables in the \code{data} object.
 #'
 #' This function estimates a multivariate multiple regression system, varying each of the ML input variables
-#' in \code{X} against the common covariates \code{QPS} and \code{Z}. The covariate balance test reports the
+#' in \code{X} against the common covariates \code{QPS} and \code{Z}, where **\code{QPS} is non-degenerate**.
+#' The covariate balance test reports the
 #' results of each individual regression, as well as the joint hypothesis result for the coefficient on \code{Z}.
 #' This helps to establish whether \code{QPS} performs adequately as a control for differences created through
 #' treatment selection. The regression system is estimated on the sample for which \code{QPS} is non-degenerate.

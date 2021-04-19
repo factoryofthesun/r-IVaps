@@ -10,13 +10,14 @@ estimate_qps(
   ml_type = "stats",
   Xc = NA,
   Xd = NA,
-  infer = F,
+  infer = FALSE,
   S = 100,
   delta = 0.8,
   L = NA,
   seed = NA,
   fcn = NA,
   parallel = F,
+  cores = NA,
   ...
 )
 }
@@ -33,7 +34,7 @@ See details for supported packages. Defaults to "stats".}
 
 \item{Xd}{Character vector of column names of the discrete variables.}
 
-\item{infer}{Boolean whether to infer continuous/discrete variables from remaining columns of data. Defaults to F.}
+\item{infer}{Boolean whether to infer continuous/discrete variables from remaining columns of data. Defaults to False.}
 
 \item{S}{Number of draws for each QPS estimation. Defaults to 100.}
 
@@ -48,28 +49,58 @@ set of discrete values for the variable.}
 \item{fcn}{Function to apply to output of ML function}
 
 \item{parallel}{Boolean indicator for whether to parallelize the QPS
-estimation.}
+estimation. Defaults to FALSE.}
+
+\item{cores}{Integer number of cores for parallelization. If NA, then detectCores() is called.}
+
+\item{\dots}{Additional inputs to be passed to \code{fcn}}
 }
 \value{
-
+If a single \code{delta} value is passed, then the function returns a vector of
+estimated Quasi-Propensity Scores of the same length as the input data. If multiple
+\code{delta} are passed, then a list of estimated QPS vectors are returned, where the
+keys are each \code{delta} value.
 }
 \description{
 Main QPS estimation function.
 }
 \details{
-ML packages currently supported: mlr3, caret, stats (base)
+ML packages currently supported:
+"mlr3", "caret", "stats" (base), "randomForest", "e1071", "bestridge", "rpart", "tree", "custom"
 
-Quasi-propensity score estimation involves taking draws \mjeqn{X_c^1,
-\ldots,X_c^S}{X_c1, ..., X_cS} from the uniform distribution on
-\mjeqn{N(X_{ci}, \delta)}, where \mjeqn{N(X_{ci},\delta)} is the \mjeqn{p_c}
-dimensional ball centered at \mjeqn{X_{ci}} with radius \mjeqn{\delta}.
-\mjeqn{X_c^1, \ldots,X_c^S} are destandardized before passed for ML
-inference. The estimation equation is \mjeqn{p^s(X_i;\delta) = \frac{1}{S}
-\sum_{s=1}^{S} ML(X_c^s, X_{di})}.
+Quasi-propensity score estimation involves taking draws \eqn{X_c^1,\ldots,X_c^S}
+from the uniform distribution on
+\eqn{N(X_{ci}, \delta)}, where \eqn{N(X_{ci},\delta)} is the
+\eqn{p_c} dimensional ball centered at \eqn{X_{ci}} with radius \eqn{\delta}.
+\eqn{X_c^1, \ldots,X_c^S} are destandardized before passed for ML
+inference. The estimation equation is \eqn{p^s(X_i;\delta) = \frac{1}{S}\sum_{s=1}^{S} ML(X_c^s, X_{di})}.
 
 If neither \code{Xc} nor \code{Xd} are passed then \code{data} is assumed to
 be all relevant continuous inputs. If only one is passed, then the remaining
 variables in \code{data} are assumed to be inputs of the other type. It is
 recommended to pass both \code{Xc} and \code{Xd} in the case that not all the
 variables in \code{data} are relevant for the ML input.
+}
+\examples{
+# Iris examples
+model <- lm(Sepal.Length ~ Sepal.Width + Petal.Length + Petal.Width, data=iris)
+estimate_qps(iris, model, Xc = names(iris)[2:3], Xd = names(iris)[4],
+            infer=FALSE, S=50, delta=0.1)
+
+# Estimate QPS while applying decision function assign_cutoff to model output with input cutoff=0.5
+assign_cutoff <- function(X, cutoff){
+  ret <- as.integer(X > cutoff)
+  return(ret)
+}
+estimate_qps(iris, model, Xc = names(iris)[2:3], Xd = names(iris)[4],
+             infer=FALSE, S=50, delta=0.1, fcn=assign_cutoff, cutoff=0.5)
+
+# Multiple deltas
+estimate_qps(iris, model, Xc = names(iris)[2:3], Xd = names(iris)[4],
+             infer=FALSE, S=50, delta=c(0.1,0.5,1))
+
+# Define mixed continuous/discrete variables
+estimate_qps(iris, model, Xc = names(iris)[2:3], Xd = names(iris)[4],
+             infer=FALSE, S=50, delta=0.1,
+             L = list("Sepal.Width" = c(2, 3), "Petal.Length" = c(3, 4)))
 }

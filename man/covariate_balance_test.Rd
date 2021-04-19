@@ -4,29 +4,71 @@
 \alias{covariate_balance_test}
 \title{Covariate Balance Test}
 \usage{
-covariate_balance_test(data, qps = "QPS", X = c("X1"), Z = "Z", verbose = T)
+covariate_balance_test(
+  data = NULL,
+  qps = NULL,
+  X = NULL,
+  Z = NULL,
+  degen = c(0, 1),
+  qps_lab = "QPS",
+  X_lab = c("X1"),
+  Z_lab = "Z",
+  verbose = T
+)
 }
 \arguments{
 \item{data}{Dataset containing ML input variables X, treatment assignment Z, and qps.}
 
-\item{qps}{Column name of QPS variable. Defaults to "QPS".}
+\item{qps}{Vector of QPS values.}
 
-\item{X}{Character vector of column names of ML inputs X. Defaults to c("X1").}
+\item{X}{Object containing ML inputs X.}
 
-\item{Z}{Column name of Z variable. Defaults to "Z".}
+\item{Z}{Vector of ML recommendation values Z.}
+
+\item{degen}{Vector of values for which QPS is degenerate. Defaults to c(0,1).}
+
+\item{qps_lab}{Column name of QPS variable. Defaults to "QPS".}
+
+\item{X_lab}{Character vector of column names of ML inputs X. Defaults to c("X1").}
+
+\item{Z_lab}{Column name of Z variable. Defaults to "Z".}
 
 \item{verbose}{Boolean indicator for whether to print summary output of estimation. Defaults to True.}
 }
 \value{
-List containing fitted multivariate multiple linear model and the joint hypothesis test.
+List containing fitted multivariate multiple linear model and the results of the joint hypothesis test,
+including the F statistic and p-value of the Pillai's trace statistic.
 }
 \description{
 Covariate Balance Test
 }
 \details{
+If the primary data vectors (qps, X, Z) are not passed, then the fallback is to search for the
+\verb{_lab} variables in the \code{data} object.
+
 This function estimates a multivariate multiple regression system, varying each of the ML input variables
-in \code{X} against the common covariates \code{qps} and \code{Z}. The covariate balance test reports the
+in \code{X} against the common covariates \code{QPS} and \code{Z}, where \strong{\code{QPS} is non-degenerate}.
+The covariate balance test reports the
 results of each individual regression, as well as the joint hypothesis result for the coefficient on \code{Z}.
-This helps to establish whether \code{qps} performs adequately as a control for differences created through
-treatment selection.
+This helps to establish whether \code{QPS} performs adequately as a control for differences created through
+treatment selection. The regression system is estimated on the sample for which \code{QPS} is non-degenerate.
+}
+\examples{
+# Iris data
+data("iris")
+assign_cutoff <- function(X, cutoff){
+  ret <- as.integer(X > cutoff)
+  return(ret)
+}
+model <- lm(Sepal.Length ~ Sepal.Width + Petal.Length + Petal.Width, data=iris)
+qps <- estimate_qps(iris, model, Xc = names(iris)[2:4], infer=FALSE, S=400,
+        delta=0.8, fcn=assign_cutoff, cutoff = 6)
+Z <- assign_cutoff(iris$Sepal.Length, 6)
+X <- iris[,2:4]
+iris[, QPS := qps]
+iris[, Z := Z]
+# Two ways of sending inputs
+out_direct <- covariate_balance_test(qps = qps, X = iris[, 2:4], Z = Z)
+out_indirect <- covariate_balance_test(data = iris, qps_lab = "QPS",
+           X_lab = names(iris)[2:4])
 }

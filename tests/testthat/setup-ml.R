@@ -1,6 +1,9 @@
 library(datasets)
 data("iris")
 
+# List of frameworks currently implemented
+frameworks <- c("mlr3", "caret", "stats", "randomForest", "e1071", "bestridge", "rpart", "tree", "custom")
+
 # Custom ML algorithm: binary using median of first variable (so average always 0.5)
 ML_split <- function(X){
   med <- median(unlist(X[,1]), na.rm=T)
@@ -16,6 +19,7 @@ get_ml <- function(type, data_type){
   }
   if (type == "mlr3"){
     library(mlr3)
+    library(rpart)
     if (data_type == "continuous"){
       task_iris <- TaskRegr$new(id="iris", backend=train_data[,1:4], target="Sepal.Length")
       learner = lrn("regr.rpart")

@@ -22,9 +22,9 @@ test_that("QPS cts and discrete inputs with seed", {
 
 test_that("QPS with decision function round", {
   expect_setequal(estimate_qps(data, model, Xc = names(data)[2:3], Xd=names(data)[4], infer=F, S=50, delta=0.1, seed=2,
-                               fcn=assign_cutoff, c=6),
+                               fcn=assign_cutoff, cutoff=6),
                   estimate_qps(data[,2:4], model, Xc = names(data)[2:3], infer=T, S=50, delta=0.1, seed=2,
-                               fcn=assign_cutoff, c=6))
+                               fcn=assign_cutoff, cutoff=6))
 })
 
 test_that("QPS with arbitrary nan", {
@@ -56,10 +56,39 @@ test_that("QPS with multiple deltas", {
                   estimate_qps(data[,2:4], model, Xd=names(data)[4], infer=T, delta=deltas, seed=4))
 })
 
-# test_that("QPS parallel execution", {
-#
-# })
-#
-# test_that("QPS parallel execution with multiple deltas", {
-#
-# })
+test_that("QPS parallel execution", {
+  chk <- Sys.getenv("_R_CHECK_LIMIT_CORES_", "")
+  if (nzchar(chk) && chk == "TRUE") {
+    # use 2 cores in CRAN/Travis/AppVeyor
+    num_workers <- 2
+  } else {
+    # use all cores in devtools::test()
+    num_workers <- parallel::detectCores()
+  }
+  L <- list("Sepal.Width" = c(2, 3), "Petal.Length" = c(3, 4))
+  expect_setequal(estimate_qps(data, model, Xc = names(data)[2:3], Xd=names(data)[4], infer=F, L = L, S=50, delta=0.1, seed=4,
+                               parallel=T, cores=num_workers),
+                  estimate_qps(data[,2:4], model, Xd=names(data)[4], infer=T, L=L, S=50, delta=0.1, seed=4,
+                               parallel=T, cores=num_workers))
+})
+
+test_that("QPS parallel execution with multiple deltas", {
+  chk <- Sys.getenv("_R_CHECK_LIMIT_CORES_", "")
+  if (nzchar(chk) && chk == "TRUE") {
+    # use 2 cores in CRAN/Travis/AppVeyor
+    num_workers <- 2
+  } else {
+    # use all cores in devtools::test()
+    num_workers <- parallel::detectCores()
+  }
+  deltas <- c(0.1, 0.5, 0.8)
+  expect_setequal(estimate_qps(data, model, Xc = names(data)[2:3], Xd=names(data)[4], infer=F, delta=deltas, seed=4,
+                               parallel=T, cores=num_workers),
+                  estimate_qps(data[,2:4], model, Xd=names(data)[4], infer=T, delta=deltas, seed=4,
+                               parallel=T, cores=num_workers))
+  expect_mapequal(estimate_qps(data, model, Xc = names(data)[2:3], Xd=names(data)[4], infer=F, delta=deltas, seed=4,
+                               parallel=T, cores=num_workers),
+                  estimate_qps(data[,2:4], model, Xd=names(data)[4], infer=T, delta=deltas, seed=4,
+                               parallel=T, cores=num_workers))
+
+})

@@ -1,2 +1,6 @@
 ^qps\.Rproj$
 ^\.Rproj\.user$
+^doc$
+^Meta$
+cran-comments.md
+images

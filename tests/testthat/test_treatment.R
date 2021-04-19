@@ -1,7 +1,7 @@
 test_that("Treatment effect input errors", {
   test_data <- iris
   model <- lm(Sepal.Length ~ Sepal.Width + Petal.Length + Petal.Width, data=test_data)
-  qps <- estimate_qps(test_data, model, Xc = names(test_data)[2:4], infer=F, S=400, delta=0.8, fcn=assign_cutoff, c = 6)
+  qps <- estimate_qps(test_data, model, Xc = names(test_data)[2:4], infer=F, S=400, delta=0.8, fcn=assign_cutoff, cutoff = 6)
 
   # Test input errors
   expect_error(covariate_balance_test(test_data))
@@ -12,7 +12,7 @@ test_that("Treatment effect input errors", {
 test_that("Treatment effect estimation", {
   test_data <- iris
   model <- lm(Sepal.Length ~ Sepal.Width + Petal.Length + Petal.Width, data=test_data)
-  qps <- estimate_qps(test_data, model, Xc = names(test_data)[2:4], infer=F, S=400, delta=0.8, fcn=assign_cutoff, c = 6)
+  qps <- estimate_qps(test_data, model, Xc = names(test_data)[2:4], infer=F, S=400, delta=0.8, fcn=assign_cutoff, cutoff = 6)
 
   # Test: compare direct and indirect input methods
   D_val <- assign_cutoff(test_data$Sepal.Length, 6)
@@ -37,7 +37,7 @@ test_that("Counterfactual value estimation", {
   learner = lrn("regr.rpart")
   learner$train(task_iris)
   ML_new <- predict(learner, test_data)
-  qps <- estimate_qps(test_data, model, Xc = names(test_data)[2:4], infer=F, S=400, delta=0.8, fcn=assign_cutoff, c = 6)
+  qps <- estimate_qps(test_data, model, Xc = names(test_data)[2:4], infer=F, S=400, delta=0.8, fcn=assign_cutoff, cutoff = 6)
 
   # Test: compare direct and indirect input methods
   Z_val <- assign_cutoff(test_data$Sepal.Length, 6)
