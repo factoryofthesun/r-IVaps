@@ -6,7 +6,7 @@
 - [Overview](#overview)
   - [ML as a Data Production Service](#ml-as-a-data-production)
   - [Framework](#framework)
-  - [r-qps](#r-qps)
+  - [r-qps](#r-qps-1)
     - [Supported ML Frameworks](#supported-ml-frameworks)
 - [Installation](#installation)
   - [Dependencies](#dependencies)
