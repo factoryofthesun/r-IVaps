@@ -1,4 +1,4 @@
 library(testthat)
-library(qps)
+library(aps)
 
-test_check("qps")
+test_check("aps")

@@ -1,4 +1,4 @@
-Package: qps
+Package: aps
 Title: Treatment Effect Estimation Using Data From Algorithm-Based Recommendations
 Version: 0.0.0.9000
 Authors@R: 
@@ -6,9 +6,9 @@ Authors@R:
            family = "Liu",
            role = c("aut", "cre"),
            email = "richard.liu@eyale.edu")
-Description: 'qps' implements the IV-based method of treatment effect estimation using 
-  Quasi Propensity Scores (QPS), introduced in Narita and Yata's "Algorithm is Experiment" (forthcoming).
-  This package provides a simple set of functions for QPS estimation, treatment effect estimation, and 
+Description: 'aps' implements the IV-based method of treatment effect estimation using 
+  Approximate Propensity Scores (APS), introduced in Narita and Yata's "Algorithm is Experiment" (forthcoming).
+  This package provides a simple set of functions for APS estimation, treatment effect estimation, and 
   off-policy evaluation, along with some diagnostic tools. The package supports the use of model objects from 
   a wide variety of ML packages in R. Please contact the author if there is not yet support for a model you wish to
   use. 
@@ -19,7 +19,8 @@ Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.1.1
 Imports:
   data.table (>= 1.13.6),
-  ivreg (>= 0.5)
+  ivreg (>= 0.5),
+  stats (>= 4.0.2)
 Suggests:
     car (>= 3.0),
     abind (>= 1.4),
@@ -35,6 +36,6 @@ Suggests:
     e1071 (>= 1.7),
     knitr,
     rmarkdown
-BugReports: https://github.com/factoryofthesun/r-qps
+BugReports: https://github.com/factoryofthesun/r-aps
 Config/testthat/edition: 3
 VignetteBuilder: knitr

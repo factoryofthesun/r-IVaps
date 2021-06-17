@@ -6,45 +6,45 @@
 \usage{
 estimate_counterfactual_ml(
   data = NULL,
-  qps = NULL,
+  aps = NULL,
   Y = NULL,
   Z = NULL,
-  ML = NULL,
-  ML_new = NULL,
+  ml = NULL,
+  mlnew = NULL,
   degen = c(0, 1),
-  qps_lab = "QPS",
-  Y_lab = "Y",
-  Z_lab = "Z",
-  ML_lab = "ML1",
-  ML_new_lab = "ML2",
+  apslab = "APS",
+  ylab = "Y",
+  zlab = "Z",
+  mllab = "ML1",
+  mlnewlab = "ML2",
   verbose = T
 )
 }
 \arguments{
-\item{data}{Dataset containing QPS, Y, Z, the original ML algorithm predictions,
+\item{data}{Dataset containing APS, Y, Z, the original ML algorithm predictions,
 and the counterfactual ML' algorithm predictions.}
 
-\item{qps}{Vector of QPS values.}
+\item{aps}{Vector of APS values.}
 
 \item{Y}{Vector of outcome values.}
 
 \item{Z}{Vector of ML recommendation values.}
 
-\item{ML}{Vector of ML predictions.}
+\item{ml}{Vector of ML predictions.}
 
-\item{ML_new}{Vector of counterfactual ML predictions.}
+\item{mlnew}{Vector of counterfactual ML predictions.}
 
-\item{degen}{Vector of values for which QPS is degenerate. Defaults to c(0,1).}
+\item{degen}{Vector of values for which APS is degenerate. Defaults to c(0,1).}
 
-\item{qps_lab}{Column name of QPS variable. Defaults to "QPS".}
+\item{apslab}{Column name of APS variable. Defaults to "APS".}
 
-\item{Y_lab}{Column name of Y variable. Defaults to "Y".}
+\item{ylab}{Column name of Y variable. Defaults to "Y".}
 
-\item{Z_lab}{Column name of Z variable. Defaults to "Z".}
+\item{zlab}{Column name of Z variable. Defaults to "Z".}
 
-\item{ML_lab}{Column name of original ML prediction variable. Defaults to "ML1".}
+\item{mllab}{Column name of original ML prediction variable. Defaults to "ML1".}
 
-\item{ML_new_lab}{Column name of counterfactual ML prediction variable. Defaults to "ML2".}
+\item{mlnewlab}{Column name of counterfactual ML prediction variable. Defaults to "ML2".}
 
 \item{verbose}{Boolean indicator for whether to print summary output of estimation. Defaults to True.}
 }
@@ -60,7 +60,7 @@ below OLS regression using historical recommendations and outcome \code{Z} and \
 \deqn{Y_i = \beta_0 + \beta_1 Z_i + \beta_2 p^s(X_i; \delta) + \epsilon_i}
 where \eqn{\beta_1} is our estimated effect of treatment recommendation.
 
-Then we take the original algorithm output \code{ML} and the counterfactual algorithm output \code{ML_new}
+Then we take the original algorithm output \code{ml} and the counterfactual algorithm output \code{mlnew}
 and estimate the below value equation.
 \deqn{\hat{V}(ML') = \frac{1}{n} \sum_{i=1}^n (Y_i + \hat{\beta_{ols}}(ML'(X_i) - ML(X_i)))}
 }
@@ -73,22 +73,22 @@ assign_cutoff <- function(X, cutoff){
 }
 test_data <- iris
 model <- lm(Sepal.Length ~ Sepal.Width + Petal.Length + Petal.Width, data=test_data)
-ML <- predict(model, test_data)
+ml <- predict(model, test_data)
 task_iris <- TaskRegr$new(id="iris", backend=test_data[,1:4], target="Sepal.Length")
 learner = lrn("regr.rpart")
 learner$train(task_iris)
-ML_new <- predict(learner, test_data)
-qps <- estimate_qps(test_data, model, Xc = names(test_data)[2:4],
-           infer=FALSE, S=400, delta=0.8, fcn=assign_cutoff, cutoff = 6)
+mlnew <- predict(learner, test_data)
+aps <- estimate_aps(test_data, model, xc = names(test_data)[2:4],
+           infer=FALSE, s=400, delta=0.8, fcn=assign_cutoff, cutoff = 6)
 # Can send counterfactual estimation inputs in two different ways
 Y_val <- test_data$Sepal.Length
 Z_val <- assign_cutoff(iris$Sepal.Length, 6)
 test_data[, Y := Y_val]
 test_data[, Z := Z_val]
-test_data[, ml := ML]
-test_data[, ml_new := ML_new]
-test_data[, QPS := qps]
-estimate_counterfactual_ml(qps = qps, Y = Y_val, Z = Z_val, ML = ML, ML_new = ML_new)
-estimate_counterfactual_ml(test_data, qps_lab = "QPS", Y_lab = "Y", Z_lab = "Z",
-                      ML_lab = "ml", ML_new_lab = "ml_new")
+test_data[, ml := ml]
+test_data[, ml_new := mlnew]
+test_data[, APS := aps]
+estimate_counterfactual_ml(aps = aps, Y = Y_val, Z = Z_val, ml = ml, mlnew = mlnew)
+estimate_counterfactual_ml(test_data, apslab = "APS", ylab = "Y", zlab = "Z",
+                      mllab = "ml", mlnewlab = "ml_new")
 }

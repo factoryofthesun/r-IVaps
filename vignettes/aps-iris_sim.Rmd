@@ -1,27 +1,23 @@
 ---
-title: "qps: Iris Simulation Example"
+title: "aps: Iris Simulation Example"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{qps: Iris Simulation Example}
+  %\VignetteIndexEntry{aps: Iris Simulation Example}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
 
-
-
-
-
-The qps package is an implementation of the method of Quasi-Propensity Scores for treatment effect estimation introduced by [Narita 2020](https://ideas.repec.org/p/eti/rdpsjp/20045.html). On a high level, this method exploits a common quality across most algorithms -- that their outputs are based entirely on observable input variables. These outputs can therefore in theory be used to estimate the causal effects of past decisions that were mediated by such algorithms. Narita 2020 propose to estimate a 2SLS system of the following form:
+The aps package is an implementation of the method of Approximate Propensity Scores for treatment effect estimation introduced by [Narita 2020](https://ideas.repec.org/p/eti/rdpsjp/20045.html). On a high level, this method exploits a common quality across most algorithms -- that their outputs are based entirely on observable input variables. These outputs can therefore in theory be used to estimate the causal effects of past decisions that were mediated by such algorithms. Narita 2020 propose to estimate a 2SLS system of the following form:
 \begin{align}
 D_i &= \gamma_0 + \gamma_1 Z_i + \gamma_2 p^s(X_i;\delta) + v_i \\
 Y_i &= \beta_0 + \beta_1 D_i + \beta_2 p^s(X_i;\delta) + \epsilon_i
 \end{align}
-where $Z_i$ is a dummy for treatment recommendation (by the algorithm), and is used to instrument for $D_i$, a dummy for realized treatment. $p^s(X_i;\delta)$ is the estimated Quasi-Propensity Score for algorithm inputs $X_i$ and bandwidth $\delta$. $Y_i$ is the outcome variable of interest.
+where $Z_i$ is a dummy for treatment recommendation (by the algorithm), and is used to instrument for $D_i$, a dummy for realized treatment. $p^s(X_i;\delta)$ is the estimated Approximate Propensity Score for algorithm inputs $X_i$ and bandwidth $\delta$. $Y_i$ is the outcome variable of interest.
 
-qps provides functions for the two primary steps of this causal estimation: Quasi-Propensity Score (QPS) estimation and instrumental variables estimation. These functions should be compatible with all of the major machine-learning libraries in R. 
+aps provides functions for the two primary steps of this causal estimation: Approximate Propensity Score (APS ) estimation and instrumental variables estimation. These functions should be compatible with all of the major machine-learning libraries in R. 
 
 # Training Data
-In this vignette, we will use the well-known [iris](https://www.rdocumentation.org/packages/datasets/versions/3.6.2/topics/iris) dataset to train a basic linear model and random forest model, then simulate some historical treatment data based on the predictions of these models and see how well the QPS method is able to capture the simulated treatment effect. 
+In this vignette, we will use the well-known [iris](https://www.rdocumentation.org/packages/datasets/versions/3.6.2/topics/iris) dataset to train a basic linear model and random forest model, then simulate some historical treatment data based on the predictions of these models and see how well the APS  method is able to capture the simulated treatment effect. 
 
 
 ```r
@@ -35,7 +31,7 @@ str(iris)
 #>  $ Petal.Width : num  0.2 0.2 0.2 0.2 0.2 0.4 0.3 0.2 0.2 0.1 ...
 #>  $ Species     : Factor w/ 3 levels "setosa","versicolor",..: 1 1 1 1 1 1 1 1 1 1 ...
 ```
-The QPS method requires the algorithmic output to be either a binary treatment recommendation or probabilities of treatment recommendation. Thus, we will define our target variable to be whether the flower species is either setosa or versicolor. 
+The APS  method requires the algorithmic output to be either a binary treatment recommendation or probabilities of treatment recommendation. Thus, we will define our target variable to be whether the flower species is either setosa or versicolor. 
 
 ```r
 iris$target <- as.integer(iris$Species %in% c("setosa", "versicolor"))
@@ -131,16 +127,16 @@ cat(paste0("ATE: ", ate, "\nATET: ", atet, "\nLATE: ", late, "\nTrue Effect: ", 
 #> LATE: 5.01337441832134
 #> True Effect: 4.99824800702316
 ```
-# Apply QPS method
-We are now all set to perform our QPS estimation and treatment effect estimation. The entire process requires only two lines of code for each model. We will need to send in our `cutoff()` function as well as that is how we generated the `Z` variables. Note that the model library is a required input if the model does not come from the base "stats" library. 
+# Apply APS  method
+We are now all set to perform our APS  estimation and treatment effect estimation. The entire process requires only two lines of code for each model. We will need to send in our `cutoff()` function as well as that is how we generated the `Z` variables. Note that the model library is a required input if the model does not come from the base "stats" library. 
 
 ```r
-full_data$lm_qps <- estimate_qps(full_data, linear_model, Xc=names(full_data)[1:4], S=100, delta=1.5, fcn=cutoff, parallel=T)
-lm_effect <- estimate_treatment_effect(full_data, qps_lab="lm_qps", Y_lab="lm_Y", Z_lab="lm_Z", D_lab="lm_D")
-#> [1] "Estimating counterfactual value on 2350 out of 10000 observations where QPS is non-degenerate..."
+full_data$lm_aps <- estimate_aps(full_data, linear_model, Xc=names(full_data)[1:4], S=100, delta=1.5, fcn=cutoff, parallel=T)
+lm_effect <- estimate_treatment_effect(full_data, aps_lab="lm_aps", Y_lab="lm_Y", Z_lab="lm_Z", D_lab="lm_D")
+#> [1] "Estimating counterfactual value on 2350 out of 10000 observations where APS  is non-degenerate..."
 #> 
 #> Call:
-#> ivreg::ivreg(formula = Y ~ D + QPS | Z + QPS)
+#> ivreg::ivreg(formula = Y ~ D + APS  | Z + APS )
 #> 
 #> Residuals:
 #>      Min       1Q   Median       3Q      Max 
@@ -150,7 +146,7 @@ lm_effect <- estimate_treatment_effect(full_data, qps_lab="lm_qps", Y_lab="lm_Y"
 #>             Estimate Std. Error t value Pr(>|t|)    
 #> (Intercept)  17.1603     0.5131  33.443   <2e-16 ***
 #> D             4.2523     2.0470   2.077   0.0379 *  
-#> QPS           1.6805     2.0104   0.836   0.4033    
+#> APS            1.6805     2.0104   0.836   0.4033    
 #> 
 #> Diagnostic tests:
 #>                   df1  df2 statistic p-value    
@@ -164,12 +160,12 @@ lm_effect <- estimate_treatment_effect(full_data, qps_lab="lm_qps", Y_lab="lm_Y"
 #> Multiple R-Squared: 0.03098,	Adjusted R-squared: 0.03015 
 #> Wald test: 31.14 on 2 and 2347 DF,  p-value: 4.493e-14
 
-full_data$rf_qps <- estimate_qps(full_data, rf_model, Xc=names(full_data)[1:4], S=100, delta=1.5, fcn=cutoff, parallel=T)
-rf_effect <- estimate_treatment_effect(full_data, qps_lab="rf_qps", Y_lab="rf_Y", Z_lab="rf_Z", D_lab="rf_D")
-#> [1] "Estimating counterfactual value on 3128 out of 10000 observations where QPS is non-degenerate..."
+full_data$rf_aps <- estimate_aps(full_data, rf_model, Xc=names(full_data)[1:4], S=100, delta=1.5, fcn=cutoff, parallel=T)
+rf_effect <- estimate_treatment_effect(full_data, aps_lab="rf_aps", Y_lab="rf_Y", Z_lab="rf_Z", D_lab="rf_D")
+#> [1] "Estimating counterfactual value on 3128 out of 10000 observations where APS  is non-degenerate..."
 #> 
 #> Call:
-#> ivreg::ivreg(formula = Y ~ D + QPS | Z + QPS)
+#> ivreg::ivreg(formula = Y ~ D + APS  | Z + APS )
 #> 
 #> Residuals:
 #>      Min       1Q   Median       3Q      Max 
@@ -179,7 +175,7 @@ rf_effect <- estimate_treatment_effect(full_data, qps_lab="rf_qps", Y_lab="rf_Y"
 #>             Estimate Std. Error t value Pr(>|t|)    
 #> (Intercept)  18.0067     0.4526  39.786  < 2e-16 ***
 #> D             5.9978     1.5754   3.807 0.000143 ***
-#> QPS          -1.1616     1.5711  -0.739 0.459760    
+#> APS           -1.1616     1.5711  -0.739 0.459760    
 #> 
 #> Diagnostic tests:
 #>                   df1  df2 statistic p-value    

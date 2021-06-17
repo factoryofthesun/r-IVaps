@@ -42,10 +42,20 @@ get_ml <- function(type, data_type){
   }
   if (type == "caret"){
     library(caret)
+    fitControl_new <- trainControl(
+      method = "repeatedcv"
+      , number = 5
+      , repeats = 1
+      , verboseIter =TRUE
+      , classProbs = TRUE
+      , allowParallel = F     ## add this argument to overwrite the default TRUE
+    )
     if(data_type == "continuous"){
-      model <- train(Sepal.Length ~ Sepal.Width + Petal.Length + Petal.Width, data=train_data)
+      model <- train(Sepal.Length ~ Sepal.Width + Petal.Length + Petal.Width, data=train_data,
+                     trControl = fitControl_new)
     } else{
-      model <- train(Sepal.Length ~ ., data=train_data)
+      model <- train(Sepal.Length ~ ., data=train_data,
+                     trControl = fitControl_new)
     }
     return(model)
   }

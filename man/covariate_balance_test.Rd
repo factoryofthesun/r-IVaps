@@ -6,32 +6,32 @@
 \usage{
 covariate_balance_test(
   data = NULL,
-  qps = NULL,
+  aps = NULL,
   X = NULL,
   Z = NULL,
   degen = c(0, 1),
-  qps_lab = "QPS",
-  X_lab = c("X1"),
-  Z_lab = "Z",
+  apslab = "APS",
+  xlab = c("X1"),
+  zlab = "Z",
   verbose = T
 )
 }
 \arguments{
-\item{data}{Dataset containing ML input variables X, treatment assignment Z, and qps.}
+\item{data}{Dataset containing ML input variables X, treatment assignment Z, and aps.}
 
-\item{qps}{Vector of QPS values.}
+\item{aps}{Vector of APS values.}
 
 \item{X}{Object containing ML inputs X.}
 
 \item{Z}{Vector of ML recommendation values Z.}
 
-\item{degen}{Vector of values for which QPS is degenerate. Defaults to c(0,1).}
+\item{degen}{Vector of values for which APS is degenerate. Defaults to c(0,1).}
 
-\item{qps_lab}{Column name of QPS variable. Defaults to "QPS".}
+\item{apslab}{Column name of APS variable. Defaults to "APS".}
 
-\item{X_lab}{Character vector of column names of ML inputs X. Defaults to c("X1").}
+\item{xlab}{Character vector of column names of ML inputs X. Defaults to c("X1").}
 
-\item{Z_lab}{Column name of Z variable. Defaults to "Z".}
+\item{zlab}{Column name of Z variable. Defaults to "Z".}
 
 \item{verbose}{Boolean indicator for whether to print summary output of estimation. Defaults to True.}
 }
@@ -43,15 +43,15 @@ including the F statistic and p-value of the Pillai's trace statistic.
 Covariate Balance Test
 }
 \details{
-If the primary data vectors (qps, X, Z) are not passed, then the fallback is to search for the
+If the primary data vectors (aps, X, Z) are not passed, then the fallback is to search for the
 \verb{_lab} variables in the \code{data} object.
 
 This function estimates a multivariate multiple regression system, varying each of the ML input variables
-in \code{X} against the common covariates \code{QPS} and \code{Z}, where \strong{\code{QPS} is non-degenerate}.
+in \code{X} against the common covariates \code{APS} and \code{Z}, where \strong{\code{APS} is non-degenerate}.
 The covariate balance test reports the
 results of each individual regression, as well as the joint hypothesis result for the coefficient on \code{Z}.
-This helps to establish whether \code{QPS} performs adequately as a control for differences created through
-treatment selection. The regression system is estimated on the sample for which \code{QPS} is non-degenerate.
+This helps to establish whether \code{APS} performs adequately as a control for differences created through
+treatment selection. The regression system is estimated on the sample for which \code{APS} is non-degenerate.
 }
 \examples{
 # Iris data
@@ -61,14 +61,14 @@ assign_cutoff <- function(X, cutoff){
   return(ret)
 }
 model <- lm(Sepal.Length ~ Sepal.Width + Petal.Length + Petal.Width, data=iris)
-qps <- estimate_qps(iris, model, Xc = names(iris)[2:4], infer=FALSE, S=400,
+aps <- estimate_aps(iris, model, xc = names(iris)[2:4], infer=FALSE, s=400,
         delta=0.8, fcn=assign_cutoff, cutoff = 6)
 Z <- assign_cutoff(iris$Sepal.Length, 6)
 X <- iris[,2:4]
-iris[, QPS := qps]
+iris[, APS := aps]
 iris[, Z := Z]
 # Two ways of sending inputs
-out_direct <- covariate_balance_test(qps = qps, X = iris[, 2:4], Z = Z)
-out_indirect <- covariate_balance_test(data = iris, qps_lab = "QPS",
-           X_lab = names(iris)[2:4])
+out_direct <- covariate_balance_test(aps = aps, X = iris[, 2:4], Z = Z)
+out_indirect <- covariate_balance_test(data = iris, apslab = "APS",
+           xlab = names(iris)[2:4])
 }

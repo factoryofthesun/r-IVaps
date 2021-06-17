@@ -1,2 +1,2 @@
-# qps 0.0.0.9000
+# aps 0.0.0.9000
 Initial development release.

@@ -6,23 +6,23 @@
 \usage{
 estimate_treatment_effect(
   data = NULL,
-  qps = NULL,
+  aps = NULL,
   Y = NULL,
   Z = NULL,
   D = NULL,
   degen = c(0, 1),
-  qps_lab = "QPS",
-  Y_lab = "Y",
-  Z_lab = "Z",
-  D_lab = "D",
+  apslab = "APS",
+  ylab = "Y",
+  zlab = "Z",
+  dlab = "D",
   estimator = "2SLS",
   verbose = T
 )
 }
 \arguments{
-\item{data}{Dataset containing QPS, Y, Z, and D data.}
+\item{data}{Dataset containing APS, Y, Z, and D data.}
 
-\item{qps}{Vector of QPS values.}
+\item{aps}{Vector of APS values.}
 
 \item{Y}{Vector of outcome values.}
 
@@ -30,15 +30,15 @@ estimate_treatment_effect(
 
 \item{D}{Vector of treatment assignment values.}
 
-\item{degen}{Vector of values for which QPS is degenerate. Defaults to c(0,1).}
+\item{degen}{Vector of values for which APS is degenerate. Defaults to c(0,1).}
 
-\item{qps_lab}{Column name of QPS variable. Defaults to "QPS".}
+\item{apslab}{Column name of APS variable. Defaults to "APS".}
 
-\item{Y_lab}{Column name of Y variable. Defaults to "Y".}
+\item{ylab}{Column name of Y variable. Defaults to "Y".}
 
-\item{Z_lab}{Column name of Z variable. Defaults to "Z".}
+\item{zlab}{Column name of Z variable. Defaults to "Z".}
 
-\item{D_lab}{Column name of D variable. Defaults to "D".}
+\item{dlab}{Column name of D variable. Defaults to "D".}
 
 \item{estimator}{String method of IV estimation. Defaults to "2SLS".}
 
@@ -51,7 +51,7 @@ Fitted ivreg model object.
 Main treatment effect estimation function
 }
 \details{
-If the primary data vectors (qps, Y, Z, D) are not passed, then the fallback is to search for the
+If the primary data vectors (aps, Y, Z, D) are not passed, then the fallback is to search for the
 \verb{_lab} variables in the \code{data} object.
 
 Treatment effect is estimated using IV estimation The default is to use the 2SLS method
@@ -69,8 +69,8 @@ assign_cutoff <- function(X, cutoff){
   return(ret)
 }
 model <- lm(Sepal.Length ~ Sepal.Width + Petal.Length + Petal.Width, data=iris)
-qps <- estimate_qps(iris, model, Xc = names(iris)[2:4],
-          infer=FALSE, S=400, delta=0.8, fcn=assign_cutoff, cutoff=6)
+aps <- estimate_aps(iris, model, xc = names(iris)[2:4],
+          infer=FALSE, s=400, delta=0.8, fcn=assign_cutoff, cutoff=6)
 
 # Can send treatment effect inputs in two different ways
 Y_val <- iris$Sepal.Length
@@ -79,8 +79,8 @@ D_val <- predict(model, iris)
 iris[, Y := Y_val]
 iris[, Z := Z_val]
 iris[, D := D_val]
-iris[, QPS := qps]
-estimate_treatment_effect(qps = qps, Y = Y_val, Z = Z_val, D = D_val)
-estimate_treatment_effect(iris, qps_lab = "QPS", Y_lab = "Sepal.Length", Z_lab = "Z",
-                          D_lab = "D")
+iris[, APS := aps]
+estimate_treatment_effect(aps = aps, Y = Y_val, Z = Z_val, D = D_val)
+estimate_treatment_effect(iris, apslab = "APS", ylab = "Sepal.Length", zlab = "Z",
+                          dlab = "D")
 }
