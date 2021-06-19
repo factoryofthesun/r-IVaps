@@ -94,8 +94,8 @@ summary(ivreg_model)
 ```
 
 ## Vignettes
-- [Introduction and Quickstart](https://github.com/factoryofthesun/r-aps/doc/aps-intro.html)
-- [Iris Simulation Example](https://github.com/factoryofthesun/r-aps/doc/aps-iris_sim.html)
+- [Introduction and Quickstart](https://github.com/factoryofthesun/r-aps/blob/main/doc/aps-intro.html)
+- [Iris Simulation Example](https://github.com/factoryofthesun/r-aps/blob/main/doc/aps-iris_sim.html)
 
 # Versioning
 
