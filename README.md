@@ -30,7 +30,7 @@ Today’s society increasingly resorts to machine learning (“AI”) and other 
 All of the above, seemingly diverse examples share a common trait: An algorithm makes decisions based only on observable input variables the data-generating algorithm uses. Conditional on the observable variables, therefore, algorithmic treatment decisions are (quasi-)randomly assigned. This property makes algorithm-based treatment decisions **an instrumental variable we can use for measuring the causal effect of the final treatment assignment**. The algorithm-based instrument may produce regression-discontinuity-style local variation (e.g. machine judges), stratified randomization (e.g. several bandit and reinforcement leaning algorithms), or mixes of the two. Narita 2020 introduces the formal framework and characterizes the sources of causal effect identification.[[1]](#1)
 
 ## Framework
-On a high level, the MLisNE method works by exploiting the fact that all inputs into a machine learning model are observable to the researcher, and thus controlling for these inputs allows one to make use of the feature space in which machine learning algorithms are effectively stochastic -- there is random assignment between two (or more) possible discrete outputs. For algorithm-based treatment decisions, we know that the algorithm output strongly affects the ultimate treatment decision (either because the algorithm *is* the treatment decision, or a final arbiter relies on the algorithm output to make the final assignment). Thus in theory, we should be able to use the output predictions of algorithms which mediate any treatment decision regime to estimate the causal effects of the treatments.
+On a high level, the AlgoIsExp method works by exploiting the fact that all inputs into a machine learning model are observable to the researcher, and thus controlling for these inputs allows one to make use of the feature space in which machine learning algorithms are effectively stochastic -- there is random assignment between two (or more) possible discrete outputs. For algorithm-based treatment decisions, we know that the algorithm output strongly affects the ultimate treatment decision (either because the algorithm *is* the treatment decision, or a final arbiter relies on the algorithm output to make the final assignment). Thus in theory, we should be able to use the output predictions of algorithms which mediate any treatment decision regime to estimate the causal effects of the treatments.
 <p align="center" width = "100%">
   <img src="/images/ml_natural_experiment_diagram.PNG" width="50%" height="50%"/>
 </p>
@@ -94,8 +94,8 @@ summary(ivreg_model)
 ```
 
 ## Vignettes
-- [Introduction and Quickstart](https://github.com/factoryofthesun/r-aps/vignettes/aps-intro.Rmd)
-- [Iris Simulation Example](https://github.com/factoryofthesun/r-aps/vignettes/aps-iris_sim.Rmd)
+- [Introduction and Quickstart](https://github.com/factoryofthesun/r-aps/doc/aps-intro.html)
+- [Iris Simulation Example](https://github.com/factoryofthesun/r-aps/doc/aps-iris_sim.html)
 
 # Versioning
 
@@ -113,6 +113,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## References
 <a id="1">[1]</a>
-1. Narita, Yusuke and Yata, Kohei. Machine Learning is Natural Experiment (forthcoming). 2020.
+1. Narita, Yusuke and Yata, Kohei. Algorithm is Experiment (forthcoming). 2021.
 
 ## Related Projects
