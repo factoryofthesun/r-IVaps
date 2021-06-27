@@ -1,4 +1,4 @@
-# r-aps
+# r-IVaps
 **[Overview](#overview)** | **[Installation](#installation)** | **[Usage](#usage)** | **[Acknowledgements](#acknowledgements)**
 <details>
 <summary><strong>Table of Contents</strong></summary>
@@ -6,7 +6,7 @@
 - [Overview](#overview)
   - [ML as a Data Production Service](#ml-as-a-data-production)
   - [Framework](#framework)
-  - [r-aps](#r-aps-1)
+  - [r-IVaps](#r-IVaps)
     - [Supported ML Frameworks](#supported-ml-frameworks)
 - [Installation](#installation)
   - [Dependencies](#dependencies)
@@ -58,8 +58,8 @@ Narita 20 proposes an instrumental variables approach to causal effect estimatio
 
 For more detail on the theoretical framework, please refer to the paper "Machine Learning is Natural Experiment" (Narita and Yata, forthcoming).
 
-## r-aps
-The aps package is an implementation of the treatment effect estimation method and paper described above. This package provides functions for the two primary estimation steps -- APS estimation and treatment effect estimation -- and is compatible with all major machine-learning libraries in R.
+## r-IVaps
+The IVaps package is an implementation of the treatment effect estimation method and paper described above. This package provides functions for the two primary estimation steps -- APS estimation and treatment effect estimation -- and is compatible with all major machine-learning libraries in R.
 
 ### Supported ML Frameworks
 Below are the supported ML libraries in R. Please contact the package author if there is missing support for a library you are using.
@@ -75,9 +75,9 @@ Below are the supported ML libraries in R. Please contact the package author if 
 # Installation
 This package is still in its development phase, but you can compile the package from source
 ```bash
-git clone https://github.com/factoryofthesun/r-aps
-R CMD build aps
-R CMD INSTALL aps_0.0.0.9000.tar.gz
+git clone https://github.com/factoryofthesun/r-IVaps
+R CMD build IVaps
+R CMD INSTALL IVaps_0.0.0.9000.tar.gz
 ```
 
 ## Dependencies
@@ -94,8 +94,8 @@ summary(ivreg_model)
 ```
 
 ## Vignettes
-- [Introduction and Quickstart](https://github.com/factoryofthesun/r-aps/vignettes/aps-intro.Rmd)
-- [Iris Simulation Example](https://github.com/factoryofthesun/r-aps/vignettes/aps-iris_sim.Rmd)
+- [Introduction and Quickstart](https://github.com/factoryofthesun/r-IVaps/vignettes/IVaps-intro.html)
+- [Iris Simulation Example](https://github.com/factoryofthesun/r-IVaps/vignettes/IVaps-iris_sim.html)
 
 # Versioning
 

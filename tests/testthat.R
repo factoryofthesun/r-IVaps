@@ -1,4 +1,4 @@
 library(testthat)
-library(aps)
+library(IVaps)
 
-test_check("aps")
+test_check("IVaps")

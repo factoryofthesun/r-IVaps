@@ -1,4 +1,4 @@
-Package: aps
+Package: IVaps
 Title: Treatment Effect Estimation Using Data From Algorithm-Based Recommendations
 Version: 0.0.0.9000
 Authors@R: 
@@ -6,7 +6,7 @@ Authors@R:
            family = "Liu",
            role = c("aut", "cre"),
            email = "richard.liu@eyale.edu")
-Description: 'aps' implements the IV-based method of treatment effect estimation using 
+Description: 'IVaps' implements the IV-based method of treatment effect estimation using 
   Approximate Propensity Scores (APS), introduced in Narita and Yata's "Algorithm is Experiment" (forthcoming).
   This package provides a simple set of functions for APS estimation, treatment effect estimation, and 
   off-policy evaluation, along with some diagnostic tools. The package supports the use of model objects from 
@@ -36,6 +36,6 @@ Suggests:
     e1071 (>= 1.7),
     knitr,
     rmarkdown
-BugReports: https://github.com/factoryofthesun/r-aps
+BugReports: https://github.com/factoryofthesun/r-IVaps
 Config/testthat/edition: 3
 VignetteBuilder: knitr

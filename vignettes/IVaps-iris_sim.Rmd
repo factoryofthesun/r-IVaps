@@ -1,20 +1,20 @@
 ---
-title: "aps: Iris Simulation Example"
+title: "IVaps: Iris Simulation Example"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{aps: Iris Simulation Example}
+  %\VignetteIndexEntry{IVaps: Iris Simulation Example}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
 
-The aps package is an implementation of the method of Approximate Propensity Scores for treatment effect estimation introduced by [Narita 2020](https://ideas.repec.org/p/eti/rdpsjp/20045.html). On a high level, this method exploits a common quality across most algorithms -- that their outputs are based entirely on observable input variables. These outputs can therefore in theory be used to estimate the causal effects of past decisions that were mediated by such algorithms. Narita 2020 propose to estimate a 2SLS system of the following form:
+The IVaps package is an implementation of the method of Approximate Propensity Scores for treatment effect estimation introduced by [Narita 2020](https://ideas.repec.org/p/eti/rdpsjp/20045.html). On a high level, this method exploits a common quality across most algorithms -- that their outputs are based entirely on observable input variables. These outputs can therefore in theory be used to estimate the causal effects of past decisions that were mediated by such algorithms. Narita 2020 propose to estimate a 2SLS system of the following form:
 \begin{align}
 D_i &= \gamma_0 + \gamma_1 Z_i + \gamma_2 p^s(X_i;\delta) + v_i \\
 Y_i &= \beta_0 + \beta_1 D_i + \beta_2 p^s(X_i;\delta) + \epsilon_i
 \end{align}
 where $Z_i$ is a dummy for treatment recommendation (by the algorithm), and is used to instrument for $D_i$, a dummy for realized treatment. $p^s(X_i;\delta)$ is the estimated Approximate Propensity Score for algorithm inputs $X_i$ and bandwidth $\delta$. $Y_i$ is the outcome variable of interest.
 
-aps provides functions for the two primary steps of this causal estimation: Approximate Propensity Score (APS ) estimation and instrumental variables estimation. These functions should be compatible with all of the major machine-learning libraries in R. 
+IVaps provides functions for the two primary steps of this causal estimation: Approximate Propensity Score (APS) estimation and instrumental variables estimation. These functions should be compatible with all of the major machine-learning libraries in R. 
 
 # Training Data
 In this vignette, we will use the well-known [iris](https://www.rdocumentation.org/packages/datasets/versions/3.6.2/topics/iris) dataset to train a basic linear model and random forest model, then simulate some historical treatment data based on the predictions of these models and see how well the APS  method is able to capture the simulated treatment effect. 

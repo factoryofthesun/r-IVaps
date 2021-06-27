@@ -1,10 +1,10 @@
-#' aps: Treatment effect estimation using Approximate Propensity Score from algorithmic assignment.
+#' IVaps: Treatment effect estimation using Approximate Propensity Score from algorithmic assignment.
 #'
-#' The aps package offers functions for the two primary steps in this method of effect estimation:
+#' The IVaps package offers functions for the two primary steps in this method of effect estimation:
 #' Approximate Propensity Score estimation and instrumental variables estimation. The package also offers
 #' a some diagnostic functions.
 #'
-#' @section aps functions:
+#' @section IVaps functions:
 #'
 #' \code{\link{estimate_aps}}
 #'
@@ -15,5 +15,5 @@
 #' \code{\link{covariate_balance_test}}
 #'
 #' @docType package
-#' @name aps
+#' @name IVaps
 NULL
