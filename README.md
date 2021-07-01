@@ -94,8 +94,8 @@ summary(ivreg_model)
 ```
 
 ## Vignettes
-- [Introduction and Quickstart](https://github.com/factoryofthesun/r-IVaps/vignettes/IVaps-intro.html)
-- [Iris Simulation Example](https://github.com/factoryofthesun/r-IVaps/vignettes/IVaps-iris_sim.html)
+- [Introduction and Quickstart](https://github.com/factoryofthesun/r-IVaps/vignettes/IVaps-intro.Rmd)
+- [Iris Simulation Example](https://github.com/factoryofthesun/r-IVaps/vignettes/IVaps-iris_sim.Rmd)
 
 # Versioning
 
